@@ -21,9 +21,9 @@ package com.jonas.debug {
 		private var _buildMode:String = isDebugBuild() ? "debug" : "release";
 		private var _playerMode:String = Capabilities.isDebugger ? "debug" : "release";
 
-		private var _onWithPlayerType:Array = [PlayerType.ACTIVEX, PlayerType.DESKTOP, PlayerType.EXTERNAL, PlayerType.PLUGIN, PlayerType.STANDALONE];
-		private var _onWithPlayerMode:Array = [PlayerMode.DEBUG, PlayerMode.RELEASE];
-		private var _onWithBuildMode:Array = [PlayerMode.DEBUG, PlayerMode.RELEASE];
+		private var _activeWithPlayerType:Array = [PlayerType.ACTIVEX, PlayerType.DESKTOP, PlayerType.EXTERNAL, PlayerType.PLUGIN, PlayerType.STANDALONE];
+		private var _activeWithPlayerMode:Array = [PlayerMode.DEBUG, PlayerMode.RELEASE];
+		private var _activeWithBuildMode:Array = [PlayerMode.DEBUG, PlayerMode.RELEASE];
 
 		private var _button : Sprite;
 		private var _buttonSize : uint = 15;
@@ -34,8 +34,6 @@ package com.jonas.debug {
 		private var _window:Sprite;
 		private var _windowWidth : Number = 500;
 		private var _windowHeight : Number = 300;
-		private var _windowBackgroundColor : Number = 0x333333;
-		//private var _windowTextColor :Number = 0xFFFFFF;
 		private var _windowTextField : TextField;
 
 		private var _errorCount:uint = 0;
@@ -43,45 +41,45 @@ package com.jonas.debug {
 		public function ErrorHandler(display : DisplayObject)
 		{
 			_target = display;
-			if(isOn())
+			if(isActive())
 				_init();
 		}
 
 		// GETTER / SETTERS
 
-		public function get onWithPlayerType() : Array {
-			return _onWithPlayerType;
+		public function get activeWithPlayerType() : Array {
+			return _activeWithPlayerType;
 		}
 
-		public function set onWithPlayerType(onWithPlayerType : Array) : void {
-			_onWithPlayerType = onWithPlayerType;
+		public function set activeWithPlayerType(value : Array) : void {
+			_activeWithPlayerType = value;
 		}
 
-		public function get onWithPlayerMode() : Array {
-			return _onWithPlayerMode;
+		public function get activeWithPlayerMode() : Array {
+			return _activeWithPlayerMode;
 		}
 
-		public function set onWithPlayerMode(onWithPlayerMode : Array) : void {
-			_onWithPlayerMode = onWithPlayerMode;
+		public function set activeWithPlayerMode(value : Array) : void {
+			_activeWithPlayerMode = value;
 		}
 
-		public function get onWithBuildMode() : Array {
-			return _onWithBuildMode;
+		public function get activeWithBuildMode() : Array {
+			return _activeWithBuildMode;
 		}
 
-		public function set onWithBuildMode(onWithBuildMode : Array) : void {
-			_onWithBuildMode = onWithBuildMode;
+		public function set activeWithBuildMode(value : Array) : void {
+			_activeWithBuildMode = value;
 		}
 
 		// PUBLIC
 
-		public function isOn():Boolean
+		public function isActive():Boolean
 		{
-			if(!inArray(_onWithPlayerType, Capabilities.playerType))
+			if(!inArray(_activeWithPlayerType, Capabilities.playerType))
 				return false;
-			if(!inArray(_onWithBuildMode, _buildMode))
+			if(!inArray(_activeWithBuildMode, _buildMode))
 				return false;
-			if(!inArray(_onWithPlayerMode, _playerMode))
+			if(!inArray(_activeWithPlayerMode, _playerMode))
 				return false;
 			return true;
 		}
@@ -100,6 +98,7 @@ package com.jonas.debug {
 		}
 
 		private function uncaughtErrorHandler(event : UncaughtErrorEvent) : void {
+
 			event.preventDefault();
 			event.stopImmediatePropagation();
 			var message : String = "<font size='11' color='#FFFFFF'>";
@@ -131,9 +130,8 @@ package com.jonas.debug {
 				DisplayObjectContainer(_target.stage.getChildAt(0)).addChild(_container);
 			}
 
-			_buttonTextField.text = (_errorCount++).toString();
+			_buttonTextField.text = (++_errorCount).toString();
 			_windowTextField.htmlText = message;
-
 
 			_button.x = 0;
 			_button.y = 0;
@@ -173,7 +171,7 @@ package com.jonas.debug {
 
 			_window = new Sprite();
 			_window.visible = false;
-			_window.graphics.beginFill(_windowBackgroundColor);
+			_window.graphics.beginFill(0x333333);
 			_window.graphics.drawRect(0, 0, _windowWidth, _windowHeight);
 			_window.graphics.endFill();
 			_window.graphics.beginFill(0x666666);
