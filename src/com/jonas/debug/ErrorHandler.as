@@ -41,8 +41,7 @@ package com.jonas.debug {
 		public function ErrorHandler(display : DisplayObject)
 		{
 			_target = display;
-			if(isActive())
-				_init();
+			_init();
 		}
 
 		// GETTER / SETTERS
@@ -98,44 +97,45 @@ package com.jonas.debug {
 		}
 
 		private function uncaughtErrorHandler(event : UncaughtErrorEvent) : void {
+			if(isActive()){
+				event.preventDefault();
+				event.stopImmediatePropagation();
+				var message : String = "<font size='11' color='#FFFFFF'>";
 
-			event.preventDefault();
-			event.stopImmediatePropagation();
-			var message : String = "<font size='11' color='#FFFFFF'>";
+				if (event.error is Error){
+					var error : Error = event.error as Error;
+					message += "<b>"+error.message+"</b>";
+					if(error.getStackTrace() != null)
+						message += "\n" + error.getStackTrace();
+				}
+				else if (event.error is ErrorEvent) {
+					var errorEvent : ErrorEvent = event.error as ErrorEvent;
+					message += "<b>"+errorEvent.text+"</b>";
+					message += "\n" + errorEvent;
+				}
+				else {
+					message += "<b>Error</b>";
+					message += "A non-Error, non-ErrorEvent type was thrown and uncaught";
+				}
+				message += "</font>";
 
-			if (event.error is Error){
-				var error : Error = event.error as Error;
-				message += "<b>"+error.message+"</b>";
-				if(error.getStackTrace() != null)
-					message += "\n" + error.getStackTrace();
+
+				if(_container.stage == null){
+					DisplayObjectContainer(_target.stage.getChildAt(0)).addChild(_container);
+					createWindow();
+					createButton();
+				}else{
+					DisplayObjectContainer(_target.stage.getChildAt(0)).removeChild(_container);
+					DisplayObjectContainer(_target.stage.getChildAt(0)).addChild(_container);
+				}
+
+				_buttonTextField.text = (++_errorCount).toString();
+				_windowTextField.htmlText = message;
+
+				_button.x = 0;
+				_button.y = 0;
+				_button.visible = true;
 			}
-			else if (event.error is ErrorEvent) {
-				var errorEvent : ErrorEvent = event.error as ErrorEvent;
-				message += "<b>"+errorEvent.text+"</b>";
-				message += "\n" + errorEvent;
-			}
-			else {
-				message += "<b>Error</b>";
-				message += "A non-Error, non-ErrorEvent type was thrown and uncaught";
-			}
-			message += "</font>";
-
-
-			if(_container.stage == null){
-				DisplayObjectContainer(_target.stage.getChildAt(0)).addChild(_container);
-				createWindow();
-				createButton();
-			}else{
-				DisplayObjectContainer(_target.stage.getChildAt(0)).removeChild(_container);
-				DisplayObjectContainer(_target.stage.getChildAt(0)).addChild(_container);
-			}
-
-			_buttonTextField.text = (++_errorCount).toString();
-			_windowTextField.htmlText = message;
-
-			_button.x = 0;
-			_button.y = 0;
-			_button.visible = true;
 		}
 
 		private function createWindow():void
