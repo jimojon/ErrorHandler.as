@@ -97,9 +97,9 @@ package com.jonas.debug {
 		}
 
 		private function uncaughtErrorHandler(event : UncaughtErrorEvent) : void {
+			event.preventDefault();
+			event.stopImmediatePropagation();
 			if(isActive()){
-				event.preventDefault();
-				event.stopImmediatePropagation();
 				var message : String = "<font size='11' color='#FFFFFF'>";
 
 				if (event.error is Error){
