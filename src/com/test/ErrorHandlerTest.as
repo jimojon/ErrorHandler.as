@@ -26,7 +26,6 @@
 			stage.align = StageAlign.TOP_LEFT;
 
 			var error:ErrorHandler = new ErrorHandler(this);
-			addChild(error);
 
 			title = new TextField();
 			title.autoSize = TextFieldAutoSize.LEFT;
