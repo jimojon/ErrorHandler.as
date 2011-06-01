@@ -1,51 +1,102 @@
+/*
+The MIT License
+
+Copyright (c) 2011 Jonas Monnier
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
+
 package com.jonas.debug {
 	import flash.display.DisplayObject;
 	import flash.display.DisplayObjectContainer;
 	import flash.display.Sprite;
+	import flash.display.Stage;
 	import flash.events.ErrorEvent;
+	import flash.events.Event;
 	import flash.events.MouseEvent;
 	import flash.events.UncaughtErrorEvent;
+	import flash.net.FileReference;
 	import flash.system.Capabilities;
 	import flash.text.TextField;
 	import flash.text.TextFieldAutoSize;
 	import flash.text.TextFieldType;
-	import flash.text.TextFormat;
 
 	/**
 	 * @author jonas
+	 * @version 0.2
+	 *
+	 * TODO
+	 * - catching external swf errors
+	 * - open infos whith key
+	 *
 	 */
-	public class ErrorHandler extends Sprite
-	{
-		private var _target:DisplayObject;
-		private var _container:Sprite;
-		private var _buildMode:String = isDebugBuild() ? "debug" : "release";
-		private var _playerMode:String = Capabilities.isDebugger ? "debug" : "release";
+	public class ErrorHandler {
+		public static const VERSION : String = "0.2";
 
-		private var _activeWithPlayerType:Array = [PlayerType.ACTIVEX, PlayerType.DESKTOP, PlayerType.EXTERNAL, PlayerType.PLUGIN, PlayerType.STANDALONE];
-		private var _activeWithPlayerMode:Array = [PlayerMode.DEBUG, PlayerMode.RELEASE];
-		private var _activeWithBuildMode:Array = [PlayerMode.DEBUG, PlayerMode.RELEASE];
+		public static const PLAYER_STANDALONE : String = "StandAlone";// for the Flash StandAlone Player
+		public static const PLAYER_EXTERNAL : String = "External";// for the Flash Player version used by the external player, or test movie mode..
+		public static const PLAYER_PLUGIN : String = "PlugIn";// for the Flash Player browser plug-in
+		public static const PLAYER_ACTIVEX : String = "ActiveX";// for the Flash Player ActiveX Control used by Microsoft Internet Explorer
+		public static const PLAYER_DESKTOP : String = "Desktop";// for the Flash Player ActiveX Control used by Microsoft Internet Explorer
 
-		private var _button : Sprite;
+		public static const MODE_DEBUG : String = "debug";
+		public static const MODE_RELEASE : String = "release";
+
 		private var _buttonSize : uint = 15;
 		private var _buttonBackgroundColor : Number = 0xFF0000;
 		private var _buttonTextColor : Number = 0xFFFFFF;
-		private var _buttonTextField : TextField;
-
-		private var _window:Sprite;
 		private var _windowWidth : Number = 500;
 		private var _windowHeight : Number = 300;
-		private var _windowTextField : TextField;
 
-		private var _errorCount:uint = 0;
+		private var _stage : Stage;
+		private var _display : DisplayObject;
+		private var _container : Sprite;
+		private var _errors : Vector.<ErrorData>;
+		private var _errorIndex : uint = 0;
 
-		public function ErrorHandler(display : DisplayObject)
-		{
-			_target = display;
-			_init();
+		private var _buildMode : String = isDebugBuild() ? "debug" : "release";
+		private var _playerMode : String = Capabilities.isDebugger ? "debug" : "release";
+
+		private var _activeWithPlayerType : Array = [PLAYER_ACTIVEX, PLAYER_DESKTOP, PLAYER_EXTERNAL, PLAYER_PLUGIN, PLAYER_STANDALONE];
+		private var _activeWithPlayerMode : Array = [MODE_DEBUG, MODE_RELEASE];
+		private var _activeWithBuildMode : Array = [MODE_DEBUG, MODE_RELEASE];
+
+		private var _prevButton : Button;
+		private var _nextButton : Button;
+		private var _openButton : Button;
+		private var _saveButton : Button;
+		private var _message : TextField;
+
+		private var _window : Sprite;
+
+		public function ErrorHandler() {
+		}
+
+		public static var instance : ErrorHandler;
+
+		public static function getIntance() : ErrorHandler {
+			if (instance == null)
+				instance = new ErrorHandler();
+			return instance;
 		}
 
 		// GETTER / SETTERS
-
 		public function get activeWithPlayerType() : Array {
 			return _activeWithPlayerType;
 		}
@@ -71,169 +122,348 @@ package com.jonas.debug {
 		}
 
 		// PUBLIC
+		public function init(display : DisplayObject) : void {
+			_display = display;
+			if (display.stage == null) {
+				display.addEventListener(Event.ADDED_TO_STAGE, addedToStage);
+			} else {
+				start(display.stage);
+			}
+		}
 
-		public function isActive():Boolean
-		{
-			if(!inArray(_activeWithPlayerType, Capabilities.playerType))
+		public function isActive() : Boolean {
+			if (!inArray(_activeWithPlayerType, Capabilities.playerType))
 				return false;
-			if(!inArray(_activeWithBuildMode, _buildMode))
+			if (!inArray(_activeWithBuildMode, _buildMode))
 				return false;
-			if(!inArray(_activeWithPlayerMode, _playerMode))
+			if (!inArray(_activeWithPlayerMode, _playerMode))
 				return false;
 			return true;
 		}
 
 		// PRIVATE
+		private function addedToStage(event : Event) : void {
+			start(DisplayObject(event.currentTarget).stage);
+		}
 
-		private function _init():void {
-			_container = new Sprite();
+		private function start(stage : Stage) : void {
+			_stage = stage;
+			_errors = new Vector.<ErrorData>();
 
-			if(_target.stage.stageWidth<_windowWidth)
-				_windowWidth  = _target.stage.stageWidth;
-			if(_target.stage.stageWidth<_windowHeight)
-				_windowHeight  = _target.stage.stageHeight;
+			if (_stage.stageWidth < _windowWidth)
+				_windowWidth = _stage.stageWidth;
+			if (_stage.stageWidth < _windowHeight)
+				_windowHeight = _stage.stageHeight;
 
-			_target.loaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, uncaughtErrorHandler);
+			_display.loaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, uncaughtErrorHandler);
 		}
 
 		private function uncaughtErrorHandler(event : UncaughtErrorEvent) : void {
 			event.preventDefault();
 			event.stopImmediatePropagation();
-			if(isActive()){
-				var message : String = "<font size='11' color='#FFFFFF'>";
 
-				if (event.error is Error){
-					var error : Error = event.error as Error;
-					message += "<b>"+error.message+"</b>";
-					if(error.getStackTrace() != null)
-						message += "\n" + error.getStackTrace();
+			var data : ErrorData = new ErrorData();
+			if (event.error is Error) {
+				var error : Error = event.error as Error;
+				data.title = error.message;
+				if (error.getStackTrace() != null)
+					data.message = error.getStackTrace();
+			} else if (event.error is ErrorEvent) {
+				var errorEvent : ErrorEvent = event.error as ErrorEvent;
+				data.title = errorEvent.text;
+				data.message = errorEvent.toString();
+			} else {
+				data.title = "Error";
+				data.message = "A non-Error, non-ErrorEvent type was thrown and uncaught";
+			}
+
+			_errors.push(data);
+			_errorIndex = _errors.length - 1;
+
+			showError();
+		}
+
+		private function showError() : void {
+			if (isActive()) {
+				if (_container == null) {
+					initView();
+					DisplayObjectContainer(_stage.getChildAt(0)).addChild(_container);
+				} else {
+					DisplayObjectContainer(_stage.getChildAt(0)).removeChild(_container);
+					DisplayObjectContainer(_stage.getChildAt(0)).addChild(_container);
 				}
-				else if (event.error is ErrorEvent) {
-					var errorEvent : ErrorEvent = event.error as ErrorEvent;
-					message += "<b>"+errorEvent.text+"</b>";
-					message += "\n" + errorEvent;
-				}
-				else {
-					message += "<b>Error</b>";
-					message += "A non-Error, non-ErrorEvent type was thrown and uncaught";
-				}
-				message += "</font>";
-
-
-				if(_container.stage == null){
-					DisplayObjectContainer(_target.stage.getChildAt(0)).addChild(_container);
-					createWindow();
-					createButton();
-				}else{
-					DisplayObjectContainer(_target.stage.getChildAt(0)).removeChild(_container);
-					DisplayObjectContainer(_target.stage.getChildAt(0)).addChild(_container);
-				}
-
-				_buttonTextField.text = (++_errorCount).toString();
-				_windowTextField.htmlText = message;
-
-				_button.x = 0;
-				_button.y = 0;
-				_button.visible = true;
+				_openButton.label.text = (_errors.length).toString();
+				_openButton.x = 0;
+				_openButton.y = 0;
+				_openButton.visible = true;
 			}
 		}
 
-		private function createWindow():void
-		{
-			_windowTextField = new TextField();
-			_windowTextField.selectable = true;
-			_windowTextField.multiline = true;
-			_windowTextField.wordWrap = true;
-			_windowTextField.width = _windowWidth;
-			_windowTextField.height = _windowHeight;
-			_windowTextField.type = TextFieldType.DYNAMIC;
-			_windowTextField.x = _windowTextField.y = 10;
-			_windowTextField.width = _windowWidth -20;
-			_windowTextField.height = _windowHeight -20;
+		// ditchhopper version
+		private function getSWFName() : String {
+			return String(_stage.loaderInfo.url.split("/").pop()).replace("%5F", "_").replace("%2D", "-");
+		}
 
-			var infos:String = "<font size='11' color='#FFFFFF'>";
-			infos += Capabilities.version+" "+Capabilities.playerType;
-			infos += "<br/>Debug player : "+Capabilities.isDebugger;
-			if(Capabilities.isDebugger)
-				infos += "<br/>Debug build : "+isDebugBuild();
+		private function getLogs() : String {
+			var logs : String = "";
+			logs += getInfos(false);
+			var n : int = _errors.length;
+			for (var i : int = 0; i < n; i++) {
+				logs += getMessage(false, i);
+			}
+			return logs;
+		}
 
-			infos += "<br/>ErrorHandler 0.1";
-			infos += "</font>";
+		private var _line : String = "\r\n\----------------------------------------\r\n\----------------------------------------";
 
-			var _infoTextField:TextField = new TextField();
-			_infoTextField.width = _windowWidth-20;
-			_infoTextField.autoSize = TextFieldAutoSize.LEFT;
-			_infoTextField.wordWrap = true;
-			_infoTextField.multiline = true;
-			_infoTextField.htmlText = infos;
-			_infoTextField.x = 10;
-			_infoTextField.y = _windowHeight-_infoTextField.height-10;
+		private function getMessage(html : Boolean = true, index : Number = -1) : String {
+			var i : uint = index == -1 ? _errorIndex : index;
+			var data : ErrorData = _errors[i];
+			var message : String = "";
+
+			if (html) {
+				message += "<font size='11' color='#FFFFFF'>";
+				message += "<b>" + (i + 1) + "/" + _errors.length + " - " + data.time + "</b><br/><br/>";
+				message += "<b>" + data.title + "</b>";
+				message += "<br/>" + data.message;
+				message += "</font>";
+			} else {
+				message += "\r\n" + (i + 1) + "/" + _errors.length + " - " + data.time;
+				message += _line;
+				message += "\r\n" + data.title;
+				message += "\r\n" + data.message.replace("\n", "\r\n");
+				message += _line + "\r\n\r\n";
+			}
+			return message;
+		}
+
+		private function getInfos(html : Boolean = true) : String {
+			var infos : String = "";
+
+			if (html) {
+				infos += "<font size='11' color='#FFFFFF'>";
+				infos += "ErrorHandler " + VERSION;
+				infos += "<br/><b>" + _stage.loaderInfo.url + "</b>";
+				infos += "<br/>" + Capabilities.version + " " + Capabilities.playerType;
+				infos += "<br/>Debug player : " + Capabilities.isDebugger;
+				if (Capabilities.isDebugger)
+					infos += "<br/>Debug build : " + isDebugBuild();
+				infos += "</font>";
+			} else {
+				infos += "\r\nErrorHandler " + VERSION;
+				infos += _line;
+				infos += "\r\n" + _stage.loaderInfo.url;
+				infos += "\r\n" + Capabilities.version + " " + Capabilities.playerType;
+				infos += "\r\nDebug player : " + Capabilities.isDebugger;
+				if (Capabilities.isDebugger)
+					infos += "\r\nDebug build : " + isDebugBuild();
+				infos += _line;
+
+				infos += "\r\navHardwareDisable : " + Capabilities.avHardwareDisable;
+				infos += "\r\ncpuArchitecture : " + Capabilities.cpuArchitecture;
+				infos += "\r\nhasAccessibility : " + Capabilities.hasAccessibility;
+				infos += "\r\nhasAudio : " + Capabilities.hasAudio;
+				infos += "\r\nhasAudioEncoder : " + Capabilities.hasAudioEncoder;
+				infos += "\r\nhasEmbeddedVideo : " + Capabilities.hasEmbeddedVideo;
+				infos += "\r\nhasIME : " + Capabilities.hasIME;
+				infos += "\r\nhasMP3 : " + Capabilities.hasMP3;
+				infos += "\r\nhasPrinting : " + Capabilities.hasPrinting;
+				infos += "\r\nhasScreenBroadcast : " + Capabilities.hasScreenBroadcast;
+				infos += "\r\nhasScreenPlayback : " + Capabilities.hasScreenPlayback;
+				infos += "\r\nhasStreamingAudio : " + Capabilities.hasStreamingAudio;
+				infos += "\r\nhasStreamingVideo : " + Capabilities.hasStreamingVideo;
+				infos += "\r\nhasTLS : " + Capabilities.hasTLS;
+				infos += "\r\nhasVideoEncoder : " + Capabilities.hasVideoEncoder;
+				infos += "\r\nisEmbeddedInAcrobat : " + Capabilities.isEmbeddedInAcrobat;
+				infos += "\r\nlanguage : " + Capabilities.language;
+				infos += "\r\nlocalFileReadDisable : " + Capabilities.localFileReadDisable;
+				infos += "\r\nmanufacturer : " + Capabilities.manufacturer;
+				infos += "\r\nmaxLevelIDC : " + Capabilities.maxLevelIDC;
+				infos += "\r\nos : " + Capabilities.os;
+				infos += "\r\npixelAspectRatio : " + Capabilities.pixelAspectRatio;
+				infos += "\r\nscreenColor : " + Capabilities.screenColor;
+				infos += "\r\nscreenDPI : " + Capabilities.screenDPI;
+				infos += "\r\nscreenResolutionX : " + Capabilities.screenResolutionX;
+				infos += "\r\nscreenResolutionY : " + Capabilities.screenResolutionY;
+				infos += "\r\nsupports32BitProcesses : " + Capabilities.supports32BitProcesses;
+				infos += "\r\nsupports64BitProcesses : " + Capabilities.supports64BitProcesses;
+				infos += "\r\ntouchscreenType : " + Capabilities.touchscreenType;
+				infos += _line + "\r\n";
+			}
+			return infos;
+		}
+
+		private function openError() : void {
+			updateControls();
+			_message.htmlText = getMessage();
+			_window.x = 0;
+			_window.visible = true;
+		}
+
+		private function initView() : void {
+			_container = new Sprite();
+
+			_message = new TextField();
+			_message.selectable = true;
+			_message.multiline = true;
+			_message.wordWrap = true;
+			_message.width = _windowWidth;
+			_message.height = _windowHeight;
+			_message.type = TextFieldType.DYNAMIC;
+			_message.x = _message.y = 10;
+			_message.y = _buttonSize + 3;
+			_message.width = _windowWidth - 20;
+			_message.height = _windowHeight - 20;
+
+			var _infos : TextField = new TextField();
+			_infos.width = _windowWidth - 20;
+			_infos.autoSize = TextFieldAutoSize.LEFT;
+			_infos.wordWrap = true;
+			_infos.multiline = true;
+			_infos.htmlText = getInfos();
+			_infos.x = 10;
+			_infos.y = _windowHeight - _infos.height - 10;
 
 			_window = new Sprite();
 			_window.visible = false;
+
 			_window.graphics.beginFill(0x333333);
-			_window.graphics.drawRect(0, 0, _windowWidth, _windowHeight);
+			_window.graphics.drawRect(0, _buttonSize, _windowWidth, _windowHeight - _buttonSize);
 			_window.graphics.endFill();
+
+			_window.graphics.beginFill(0x111111);
+			_window.graphics.drawRect(0, _buttonSize, _windowWidth, _buttonSize * 1.5);
+			_window.graphics.endFill();
+
 			_window.graphics.beginFill(0x666666);
-			_window.graphics.drawRect(0, _infoTextField.y-10, _windowWidth, _infoTextField.height+20);
+			_window.graphics.drawRect(0, _infos.y - 10, _windowWidth, _infos.height + 20);
 			_window.graphics.endFill();
+
 			_window.x = -_windowWidth;
-			_window.addChild(_windowTextField);
-			_window.addChild(_infoTextField);
+			_window.addChild(_message);
+			_window.addChild(_infos);
+
+			_nextButton = new Button(_buttonSize, _buttonSize * 1.5, _buttonBackgroundColor, _buttonTextColor, 10);
+			_nextButton.addEventListener(MouseEvent.CLICK, onClickNext);
+			_nextButton.label.text = ">";
+			_nextButton.x = _windowWidth - _buttonSize;
+			_nextButton.y = _buttonSize;
+			_window.addChild(_nextButton);
+
+			_prevButton = new Button(_buttonSize, _buttonSize * 1.5, _buttonBackgroundColor, _buttonTextColor, 10);
+			_prevButton.addEventListener(MouseEvent.CLICK, onClickPrev);
+			_prevButton.x = _windowWidth - 1 - _buttonSize * 2;
+			_prevButton.y = _buttonSize;
+			_prevButton.label.text = "<";
+			_window.addChild(_prevButton);
+
+			_saveButton = new Button(_buttonSize * 3, _buttonSize * 1.5, _buttonBackgroundColor, _buttonTextColor, 11);
+			_saveButton.addEventListener(MouseEvent.CLICK, onClickSave);
+			_saveButton.label.text = "save";
+			_saveButton.x = _windowWidth - _saveButton.width - 2 - (_buttonSize * 2);
+			_saveButton.y = _buttonSize;
+			_window.addChild(_saveButton);
+
 			_container.addChild(_window);
+
+			_openButton = new Button(_buttonSize, _buttonSize, _buttonBackgroundColor, _buttonTextColor);
+			_openButton.addEventListener(MouseEvent.CLICK, onClickOpen);
+			_openButton.label.text = "0";
+			_container.addChild(_openButton);
 		}
 
-		private function createButton():void
-		{
-			_buttonTextField = new TextField();
-			_buttonTextField.mouseEnabled = false;
-			_buttonTextField.autoSize = TextFieldAutoSize.LEFT;
-			_buttonTextField.text = "0";
-			_buttonTextField.defaultTextFormat = new TextFormat(null, 11, _buttonTextColor, false, false, false, null, null, "center");
-			_buttonTextField.y = (_buttonSize-_buttonTextField.height)/2;
-			_buttonTextField.autoSize = TextFieldAutoSize.NONE;
-			_buttonTextField.width = _buttonSize;
-
-			_button = new Sprite();
-			_button.x = -100;
-			_button.visible = false;
-			_button.addEventListener(MouseEvent.CLICK, onClick);
-			_button.buttonMode = true;
-			_button.graphics.beginFill(_buttonBackgroundColor);
-			_button.graphics.drawRect(0, 0, _buttonSize, _buttonSize);
-			_button.graphics.endFill();
-			_button.addChild(_buttonTextField);
-			_container.addChild(_button);
+		private function updateControls() : void {
+			_prevButton.mouseEnabled = _errorIndex > 0;
+			_prevButton.alpha = _prevButton.mouseEnabled ? 1 : 0.5;
+			_nextButton.mouseEnabled = _errorIndex < _errors.length - 1;
+			_nextButton.alpha = _nextButton.mouseEnabled ? 1 : 0.5;
 		}
 
-		private function onClick(event : MouseEvent) : void
-		{
-			if(_window.visible){
+		private function onClickSave(event : MouseEvent) : void {
+			var f : FileReference = new FileReference();
+			var d : Date = new Date();
+			f.save(getLogs(), getSWFName() + ".log." + d.fullYear + "-" + format2(d.month + 1) + "-" + format2(d.date) + d.time + ".txt");
+		}
+
+		private function onClickNext(event : MouseEvent) : void {
+			_errorIndex++;
+			updateControls();
+			openError();
+		}
+
+		private function onClickPrev(event : MouseEvent) : void {
+			_errorIndex--;
+			updateControls();
+			openError();
+		}
+
+		private function onClickOpen(event : MouseEvent) : void {
+			if (_window.visible) {
 				_window.visible = false;
 				_window.x = -_windowWidth;
-			}else{
-				_window.x = 0;
-				_window.y = _buttonSize;
-				_window.visible = true;
+			} else {
+				openError();
 			}
 		}
 
-		private function isDebugBuild():Boolean {
-			var s:String = new Error().getStackTrace();
-			if(s == null)
-				return false; // undefined status
+		private function isDebugBuild() : Boolean {
+			var s : String = new Error().getStackTrace();
+			if (s == null)
+				return false;
+			// undefined status
 			return s.indexOf('[') != -1;
 		}
 
-		private function inArray(array:Array, value:String):Boolean {
-			var n:uint = array.length;
-			for(var i:uint=0; i<n; i++){
-				if(array[i] == value)
+		private function inArray(array : Array, value : String) : Boolean {
+			var n : uint = array.length;
+			for (var i : uint = 0; i < n; i++) {
+				if (array[i] == value)
 					return true;
 			}
 			return false;
 		}
 
-
+		private function format2(n : uint) : String {
+			if (n < 10)
+				return "0" + n;
+			return n.toString();
+		}
 	}
 }
+import flash.display.Sprite;
+import flash.text.TextField;
+import flash.text.TextFieldAutoSize;
+import flash.text.TextFormat;
+
+internal class Button extends Sprite {
+	public var label : TextField;
+
+	public function Button(width : Number, height : Number, bgColor : Number = 0xFF0000, textColor : Number = 0xFFFFFF, textSize : Number = 9) {
+		label = new TextField();
+		label.mouseEnabled = false;
+		label.autoSize = TextFieldAutoSize.LEFT;
+		label.text = " ";
+		label.defaultTextFormat = new TextFormat(null, textSize, textColor, false, false, false, null, null, "center");
+		label.y = (height - label.height) / 2;
+		label.autoSize = TextFieldAutoSize.NONE;
+		label.width = width;
+
+		buttonMode = true;
+		graphics.beginFill(bgColor);
+		graphics.drawRect(0, 0, width, height);
+		graphics.endFill();
+		addChild(label);
+	}
+}
+internal class ErrorData {
+	public var time : Date;
+	public var type : String;
+	public var title : String;
+	public var message : String;
+
+	public function ErrorData() {
+		time = new Date();
+	}
+}
+
+

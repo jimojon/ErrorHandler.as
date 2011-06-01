@@ -1,4 +1,5 @@
-﻿package com.test{
+﻿package test{
+	import flash.events.Event;
 	import flash.text.TextFormat;
 	import com.jonas.debug.ErrorHandler;
 	import flash.display.Loader;
@@ -13,21 +14,25 @@
 	/**
 	 * @author jonas
 	 */
+
+	[SWF(width="550", height="400", backgroundColor="#f2f2f2")]
 	public class ErrorHandlerTest extends Sprite
 	{
-		private var bt1:Sprite;
-		private var bt2:Sprite;
-		private var bt3:Sprite;
-		private var title:TextField;
+		public function ErrorHandlerTest(){
+			if(stage == null){
+				addEventListener(Event.ADDED_TO_STAGE, ready);
+			}else{
+				ready();
+			}
+		}
 
-		public function ErrorHandlerTest()
-		{
+		private function ready(event : Event = null) : void {
 			stage.scaleMode = StageScaleMode.NO_SCALE;
 			stage.align = StageAlign.TOP_LEFT;
 
-			var error:ErrorHandler = new ErrorHandler(this);
+			ErrorHandler.getIntance().init(this);
 
-			title = new TextField();
+			var title:TextField = new TextField();
 			title.autoSize = TextFieldAutoSize.LEFT;
 			title.width = stage.stageWidth-80;
 			title.multiline = true;
@@ -35,17 +40,17 @@
 			title.defaultTextFormat = new TextFormat("Arial", 15, 0x333333, true);
 			title.x = title.y = 40;
 
-			var infos:String = "<font size='15'><b>ErrorHandler 0.1</b></font>";
-			infos+="<br/><font size='11'>Active with player types : "+error.activeWithPlayerType;
-			infos+="<br/>Active with player modes : "+error.activeWithPlayerMode;
-			infos+="<br/>Active with build modes : "+error.activeWithBuildMode+'</font>';
+			var infos:String = "<font size='15'><b>ErrorHandler "+ErrorHandler.VERSION+"</b></font>";
+			infos+="<br/><font size='11'>Active with player types : "+ErrorHandler.getIntance().activeWithPlayerType;
+			infos+="<br/>Active with player modes : "+ErrorHandler.getIntance().activeWithPlayerMode;
+			infos+="<br/>Active with build modes : "+ErrorHandler.getIntance().activeWithBuildMode+'</font>';
 
 			title.htmlText = infos;
 			addChild(title);
 
-			bt1 = createButton("Custom Error", clickError1, 40, title.y+title.height+20);
-			bt2 = createButton("Native Error", clickError2, 40, bt1.y+bt1.height+20);
-			bt3 = createButton("Native ErrorEvent", clickError3, 40, bt2.y+bt2.height+20);
+			var bt1:Sprite = createButton("Custom Error", clickError1, 40, title.y+title.height+20);
+			var bt2:Sprite = createButton("Native Error", clickError2, 40, bt1.y+bt1.height+20);
+			createButton("Native ErrorEvent", clickError3, 40, bt2.y+bt2.height+20);
 		}
 
 		private function clickError1(e:MouseEvent):void {
