@@ -307,6 +307,15 @@ package com.jonas.debug {
 		private function initView() : void {
 			_container = new Sprite();
 
+			var _infos : TextField = new TextField();
+			_infos.width = _windowWidth - 20;
+			_infos.autoSize = TextFieldAutoSize.LEFT;
+			_infos.wordWrap = true;
+			_infos.multiline = true;
+			_infos.htmlText = getInfos();
+			_infos.x = 10;
+			_infos.y = _windowHeight - _infos.height - 10;
+
 			_message = new TextField();
 			_message.selectable = true;
 			_message.multiline = true;
@@ -317,16 +326,7 @@ package com.jonas.debug {
 			_message.x = _message.y = 10;
 			_message.y = _buttonSize + 3;
 			_message.width = _windowWidth - 20;
-			_message.height = _windowHeight - 20;
-
-			var _infos : TextField = new TextField();
-			_infos.width = _windowWidth - 20;
-			_infos.autoSize = TextFieldAutoSize.LEFT;
-			_infos.wordWrap = true;
-			_infos.multiline = true;
-			_infos.htmlText = getInfos();
-			_infos.x = 10;
-			_infos.y = _windowHeight - _infos.height - 10;
+			_message.height = _windowHeight - _message.y - _infos.height - 30;
 
 			_window = new Sprite();
 			_window.visible = false;
