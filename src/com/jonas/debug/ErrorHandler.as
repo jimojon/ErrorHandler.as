@@ -162,12 +162,13 @@ package com.jonas.debug {
 			event.preventDefault();
 			event.stopImmediatePropagation();
 
+
 			var data : ErrorData = new ErrorData();
 			if (event.error is Error) {
 				var error : Error = event.error as Error;
 				data.title = error.message;
-				if (error.getStackTrace() != null)
-					data.message = error.getStackTrace();
+				if (error.getStackTrace()!= null)
+						data.message = error.getStackTrace();
 			} else if (event.error is ErrorEvent) {
 				var errorEvent : ErrorEvent = event.error as ErrorEvent;
 				data.title = errorEvent.text;
@@ -176,6 +177,9 @@ package com.jonas.debug {
 				data.title = "Error";
 				data.message = "A non-Error, non-ErrorEvent type was thrown and uncaught";
 			}
+			if(data.message == null)
+				data.message = "";
+
 
 			_errors.push(data);
 			_errorIndex = _errors.length - 1;
