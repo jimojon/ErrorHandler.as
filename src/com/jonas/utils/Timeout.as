@@ -44,6 +44,7 @@ package com.jonas.utils {
 
 		public static function clear():void {
 			if(_running){
+				_sprite.removeEventListener(Event.ENTER_FRAME, onEnterFrame);
 				_stack = new Vector.<Object>();
 				_running = false;
 			}
