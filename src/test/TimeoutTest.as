@@ -1,4 +1,7 @@
 package test {
+	import flash.display.StageAlign;
+	import flash.display.StageScaleMode;
+	import flash.events.MouseEvent;
 	import com.jonas.utils.Timeout;
 
 	import flash.display.Sprite;
@@ -10,7 +13,7 @@ package test {
 	 * @author jonas
 	 * @date 16 juin 2011
 	 */
-	[SWF(width = "320", height = "480", frameRate = "60")]
+	[SWF(width="320", height="480", frameRate="60", backgroundColor="#f2f2f2")]
 	public class TimeoutTest extends Sprite
 	{
 		private var message1:TextField;
@@ -21,20 +24,33 @@ package test {
 		private var delay:int = 100;
 		public function TimeoutTest()
 		{
+			stage.scaleMode = StageScaleMode.NO_SCALE;
+			stage.align = StageAlign.TOP_LEFT;
+
 			message1 = new TextField();
 			message1.width = 160;
 			message1.height = 480;
-			message1.htmlText = "setTimeout()\n";
+			message1.mouseEnabled = false;
+			message1.text = "Tap to start";
 			addChild(message1);
 
 			message2 = new TextField();
 			message2.x = 160;
 			message2.width = 160;
 			message2.height = 480;
-			message2.htmlText = "Timeout.execute()\n";
+			message2.mouseEnabled = false;
 			addChild(message2);
 
+			stage.addEventListener(MouseEvent.CLICK, start);
+			//start(null);
+		}
+
+		private function start(event : MouseEvent) : void {
+			stage.removeEventListener(MouseEvent.CLICK, start);
+			message1.htmlText = "setTimeout()\n";
+			message2.htmlText = "Timeout.execute()\n";
 			startTest1();
+			startTest2();
 		}
 
 		public function startTest1():void {
