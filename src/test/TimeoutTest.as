@@ -1,5 +1,5 @@
 package test {
-	import com.jonas.utils.Timeout2;
+	import com.jonas.utils.Timeout;
 
 	import flash.display.Sprite;
 	import flash.text.TextField;
@@ -53,7 +53,7 @@ package test {
 			start2 = getTimer();
 			for(i=1; i<=iteration; i++){
 				n = i*delay;
-				Timeout2.execute(test2, n, "A "+n+" ms delay - ");
+				Timeout.execute(test2, n, "A "+n+" ms delay - ");
 			}
 		}
 
