@@ -76,6 +76,8 @@ package test {
 				n = i*delay;
 				Timeout.create(test2, n, "A "+n+" ms delay - ");
 			}
+
+			//Timeout.clear(10);
 		}
 
 		public function test1(s:String):void {
