@@ -22,6 +22,7 @@ package test {
 		private var start2:int;
 		private var iteration:int = 30;
 		private var delay:int = 100;
+
 		public function TimeoutTest()
 		{
 			stage.scaleMode = StageScaleMode.NO_SCALE;
@@ -67,9 +68,13 @@ package test {
 			var i:uint;
 			var n:uint = 0;
 			start2 = getTimer();
+
+//			Timeout.create(test2, 500, "test01 500 - ");
+//			Timeout.create(test2, 100, "test02 100 - ");
+
 			for(i=1; i<=iteration; i++){
 				n = i*delay;
-				Timeout.execute(test2, n, "A "+n+" ms delay - ");
+				Timeout.create(test2, n, "A "+n+" ms delay - ");
 			}
 		}
 
