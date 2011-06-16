@@ -70,8 +70,8 @@ package com.jonas.debug {
 		private var _errors : Vector.<ErrorData>;
 		private var _errorIndex : uint = 0;
 
-		private var _buildMode : String = isDebugBuild() ? "debug" : "release";
-		private var _playerMode : String = Capabilities.isDebugger ? "debug" : "release";
+		private var _buildMode : String = isDebugBuild() ? MODE_DEBUG : MODE_RELEASE;
+		private var _playerMode : String = Capabilities.isDebugger ? MODE_DEBUG : MODE_RELEASE;
 
 		private var _activeWithPlayerType : Array = [PLAYER_ACTIVEX, PLAYER_DESKTOP, PLAYER_EXTERNAL, PLAYER_PLUGIN, PLAYER_STANDALONE];
 		private var _activeWithPlayerMode : Array = [MODE_DEBUG, MODE_RELEASE];
