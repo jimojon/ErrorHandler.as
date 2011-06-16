@@ -1,9 +1,10 @@
 package test {
-	import com.jonas.utils.Timeout;
+	import com.jonas.utils.Timeout2;
 
 	import flash.display.Sprite;
 	import flash.text.TextField;
 	import flash.utils.getTimer;
+	import flash.utils.setTimeout;
 
 	/**
 	 * @author jonas
@@ -12,26 +13,58 @@ package test {
 	[SWF(width = "320", height = "480", frameRate = "60")]
 	public class TimeoutTest extends Sprite
 	{
-		private var message:TextField;
-		private var start:int;
+		private var message1:TextField;
+		private var message2:TextField;
+		private var start1:int;
+		private var start2:int;
+		private var iteration:int = 30;
+		private var delay:int = 100;
 		public function TimeoutTest()
 		{
-			message = new TextField();
-			message.width = 320;
-			message.height = 480;
-			addChild(message);
+			message1 = new TextField();
+			message1.width = 160;
+			message1.height = 480;
+			message1.htmlText = "setTimeout()\n";
+			addChild(message1);
 
+			message2 = new TextField();
+			message2.x = 160;
+			message2.width = 160;
+			message2.height = 480;
+			message2.htmlText = "Timeout.execute()\n";
+			addChild(message2);
+
+			startTest1();
+		}
+
+		public function startTest1():void {
+			var i:uint;
 			var n:uint = 0;
-			start = getTimer();
-			for(var i:int=1; i<=50; i++){
-				n = i*100;
-				Timeout.execute(test, n, "Hello with a "+n+" ms delay - ");
+			start1 = getTimer();
+			for(i=1; i<=iteration; i++){
+				n = i*delay;
+				setTimeout(test1, n, "A "+n+" ms delay - ");
 			}
 		}
 
-		public function test(s:String):void {
-			var m:String = s+(getTimer()-start)+"\n";
-			message.appendText(m);
+		public function startTest2():void {
+			var i:uint;
+			var n:uint = 0;
+			start2 = getTimer();
+			for(i=1; i<=iteration; i++){
+				n = i*delay;
+				Timeout2.execute(test2, n, "A "+n+" ms delay - ");
+			}
+		}
+
+		public function test1(s:String):void {
+			var m:String = s+(getTimer()-start1)+"\n";
+			message1.appendText(m);
+		}
+
+		public function test2(s:String):void {
+			var m:String = s+(getTimer()-start2)+"\n";
+			message2.appendText(m);
 		}
 	}
 }
