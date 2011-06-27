@@ -1,20 +1,19 @@
 ﻿package test{
-	import flash.events.Event;
-	import flash.text.TextFormat;
 	import com.jonas.debug.ErrorHandler;
 	import flash.display.Loader;
 	import flash.display.Sprite;
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
+	import flash.events.Event;
 	import flash.events.MouseEvent;
 	import flash.net.URLRequest;
 	import flash.text.TextField;
 	import flash.text.TextFieldAutoSize;
+	import flash.text.TextFormat;
 
 	/**
 	 * @author jonas
 	 */
-
 	[SWF(width="550", height="400", backgroundColor="#f2f2f2")]
 	public class ErrorHandlerTest extends Sprite
 	{
