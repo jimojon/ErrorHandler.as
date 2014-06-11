@@ -47,7 +47,7 @@ package com.jonas.debug {
 	 *
 	 */
 	public class ErrorHandler {
-		public static const VERSION : String = "0.2";
+		public static const VERSION : String = "0.3";
 
 		public static const PLAYER_STANDALONE : String = "StandAlone";// for the Flash StandAlone Player
 		public static const PLAYER_EXTERNAL : String = "External";// for the Flash Player version used by the external player, or test movie mode..
@@ -58,7 +58,7 @@ package com.jonas.debug {
 		public static const MODE_DEBUG : String = "debug";
 		public static const MODE_RELEASE : String = "release";
 
-		private var _buttonSize : uint = 15;
+		private var _buttonSize : uint = 30;
 		private var _buttonBackgroundColor : Number = 0xFF0000;
 		private var _buttonTextColor : Number = 0xFFFFFF;
 		private var _windowWidth : Number = 500;
@@ -324,7 +324,7 @@ package com.jonas.debug {
 			_message.height = _windowHeight;
 			_message.type = TextFieldType.DYNAMIC;
 			_message.x = _message.y = 10;
-			_message.y = _buttonSize + 3;
+			_message.y = _buttonSize*1.35;
 			_message.width = _windowWidth - 20;
 			_message.height = _windowHeight - _message.y - _infos.height - 30;
 
@@ -336,7 +336,7 @@ package com.jonas.debug {
 			_window.graphics.endFill();
 
 			_window.graphics.beginFill(0x111111);
-			_window.graphics.drawRect(0, _buttonSize, _windowWidth, _buttonSize * 1.5);
+			_window.graphics.drawRect(0, _buttonSize, _windowWidth, _buttonSize);
 			_window.graphics.endFill();
 
 			_window.graphics.beginFill(0x666666);
@@ -347,21 +347,21 @@ package com.jonas.debug {
 			_window.addChild(_message);
 			_window.addChild(_infos);
 
-			_nextButton = new Button(_buttonSize, _buttonSize * 1.5, _buttonBackgroundColor, _buttonTextColor, 10);
+			_nextButton = new Button(_buttonSize, _buttonSize, _buttonBackgroundColor, _buttonTextColor, 10);
 			_nextButton.addEventListener(MouseEvent.CLICK, onClickNext);
 			_nextButton.label.text = ">";
 			_nextButton.x = _windowWidth - _buttonSize;
 			_nextButton.y = _buttonSize;
 			_window.addChild(_nextButton);
 
-			_prevButton = new Button(_buttonSize, _buttonSize * 1.5, _buttonBackgroundColor, _buttonTextColor, 10);
+			_prevButton = new Button(_buttonSize, _buttonSize, _buttonBackgroundColor, _buttonTextColor, 10);
 			_prevButton.addEventListener(MouseEvent.CLICK, onClickPrev);
 			_prevButton.x = _windowWidth - 1 - _buttonSize * 2;
 			_prevButton.y = _buttonSize;
 			_prevButton.label.text = "<";
 			_window.addChild(_prevButton);
 
-			_saveButton = new Button(_buttonSize * 3, _buttonSize * 1.5, _buttonBackgroundColor, _buttonTextColor, 11);
+			_saveButton = new Button(_buttonSize * 3, _buttonSize, _buttonBackgroundColor, _buttonTextColor, 11);
 			_saveButton.addEventListener(MouseEvent.CLICK, onClickSave);
 			_saveButton.label.text = "save";
 			_saveButton.x = _windowWidth - _saveButton.width - 2 - (_buttonSize * 2);
@@ -442,7 +442,7 @@ import flash.text.TextFormat;
 internal class Button extends Sprite {
 	public var label : TextField;
 
-	public function Button(width : Number, height : Number, bgColor : Number = 0xFF0000, textColor : Number = 0xFFFFFF, textSize : Number = 9) {
+	public function Button(width : Number, height : Number, bgColor : Number = 0xFF0000, textColor : Number = 0xFFFFFF, textSize : Number = 12) {
 		label = new TextField();
 		label.mouseEnabled = false;
 		label.autoSize = TextFieldAutoSize.LEFT;
